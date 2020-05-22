@@ -1,0 +1,24 @@
+{
+    "name": "ajthenewguy/php7-matrix",
+    "description": "A Matrix class leveraging PHP7 data strucures",
+    "type": "library",
+    "require": {
+        "php": "^7.2.5",
+        "php-ds/php-ds": "^1.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Matrix\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Allen McCabe",
+            "email": "allenmccabe@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev"
+}
