@@ -15,6 +15,7 @@
             "Matrix\\": "src/"
         }
     },
+    "license": "MIT",
     "authors": [
         {
             "name": "Allen McCabe",
