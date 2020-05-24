@@ -106,17 +106,6 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     }
 
     /**
-     * Get the cofactors of the supplied Matrix.
-     * 
-     * @param Matrix<Vector<Vector<mixed>>> $matrix
-     * @return Matrix<Vector<Vector<mixed>>>
-     */
-    public static function cofactors(Matrix $matrix): Matrix
-    {
-        return $matrix->getCofactors();
-    }
-
-    /**
      * Create and return an identity Matrix.
      *
      * @param integer $size
@@ -134,19 +123,6 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             $rows->push($row);
         }
         return new Matrix($rows);
-    }
-
-    /**
-     * Get a Matrix of the minors of the supplied Matrix for the given column/row.
-     *
-     * @param Matrix<Vector<Vector<mixed>>> $matrix
-     * @param integer $column_x
-     * @param integer $row_y
-     * @return Matrix<Vector<Vector<mixed>>>
-     */
-    public static function minors(Matrix $matrix, int $column_x, int $row_y = 0): Matrix
-    {
-        return $matrix->getMinors($column_x, $row_y);
     }
 
 
