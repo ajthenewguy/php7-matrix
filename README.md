@@ -26,7 +26,7 @@ Instances can be instantiated with data, passing in an array of arrays. The firs
 
     public added($input): Matrix
 
-Return a new matrix with a matrix or value added to this instance.
+Return a new matrix with a matrix or numeric value added to this instance.
 
     public determinant(): numeric
 
@@ -34,7 +34,7 @@ Scalar value that can be computed from the elements of a square matrix.
 
     public divided($input): Matrix
 
-Return a new matrix of this matrix divided by a matrix or numeric value.
+Return a new matrix divided by a matrix or numeric value.
 
     public equals(Matrix $m): bool
 
@@ -42,7 +42,7 @@ Check if the matrix equals the suppled matrix.
 
     public exponentiated($input): Matrix
 
-Returns a matrix exponentiated by a numeric value.
+Returns a new matrix exponentiated by a numeric value.
 
     public get(int $x_column, int $y_row)
 
@@ -98,7 +98,7 @@ Check if the matrix is a diagonal matrix, a matrix in which the entries outside 
 
     public isTriangular(): bool
 
-Check if the matrix is triangular, a matrix that is both upper and lower triangular.
+Check if the matrix is triangular, a matrix that is either upper or lower triangular.
 
     public isLowerTriangular(): bool
 

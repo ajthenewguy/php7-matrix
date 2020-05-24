@@ -343,6 +343,8 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     }
 
     /**
+     * Check if the matrix is a diagonal matrix, a matrix in which the entries outside the main diagonal are all zero.
+     * 
      * @return bool
      */
     public function isDiagonal(): bool
@@ -351,6 +353,8 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     }
 
     /**
+     * Check if the matrix is triangular, a matrix that is either upper or lower triangular.
+     * 
      * @return bool
      */
     public function isTriangular(): bool
@@ -359,6 +363,8 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     }
 
     /**
+     * Check if all the entries above the main diagonal are zero.
+     * 
      * @return bool
      */
     public function isLowerTriangular(): bool
@@ -377,6 +383,8 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     }
 
     /**
+     * Check if all the entries below the main diagonal are zero.
+     * 
      * @return bool
      */
     public function isUpperTriangular(): bool
