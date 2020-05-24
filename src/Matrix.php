@@ -476,7 +476,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     }
 
     /**
-     * Add a Matrix or value to this instance.
+     * Add a Matrix or numeric value to this instance.
      * Mutative.
      * 
      * @param Matrix<Vector<Vector<mixed>>>|float|integer $input
@@ -593,7 +593,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     }
 
     /**
-     * Divide this Matrix by a Matrix or value.
+     * Divide this Matrix by a Matrix or numeric value.
      * Mutative.
      * 
      * @param Matrix<Vector<Vector<mixed>>>|float|integer $input
@@ -613,7 +613,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     }
 
     /**
-     * Return a new Matrix of this Matrix divided by a Matrix or value.
+     * Return a new Matrix of this Matrix divided by a Matrix or numeric value.
      * 
      * @param Matrix<Vector<Vector<mixed>>>|float|integer $input
      * @return Matrix<Vector<Vector<mixed>>>
@@ -649,7 +649,6 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
 
     /**
      * Returns a Matrix exponentiated by a numeric value.
-     * Mutative.
      * 
      * @param Matrix<Vector<Vector<mixed>>>|float|integer $input
      * @return Matrix<Vector<Vector<mixed>>>
@@ -843,7 +842,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      * @param Matrix<Vector<Vector<mixed>>> $matrix
      * @param integer $flags
      */
-    public function validateDimensions(Matrix $matrix, $flags = 0): void
+    private function validateDimensions(Matrix $matrix, $flags = 0): void
     {
         if ($flags & self::SQUARE) {
             assert($matrix->isSquare(),
