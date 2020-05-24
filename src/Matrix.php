@@ -113,7 +113,6 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public static function identity(int $size): Matrix
     {
-        $x = 0;
         $rows = new Vector();
         for ($y = 0; $y < $size; $y++) {
             $row = new Vector();
@@ -165,15 +164,12 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function getAntidiagonal(): Vector
     {
-        $Vector = new Vector();
-        for ($y = 0; $y < $this->y; $y++) {
-            for ($x = 0; $x < $this->x; $x++) {
-                if ($x === $y) {
-                    $Vector->push($this->get($this->x - 1 - $x, $y));
-                }
-            }
+        $row = new Vector();
+        $size = max($this->x, $this->y);
+        for ($o = 0; $o < $size; $o++) {
+            $row->push($this->get($this->x - 1 - $o, $o));
         }
-        return $Vector;
+        return $row;
     }
 
     /**
@@ -184,30 +180,28 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function getColumn(int $offset): Vector
     {
+        assert($offset < $this->x, new \OutOfBoundsException());
+
         $column = new Vector();
 
         foreach ($this->table as $y => $row) {
-            if ($row->capacity() > $offset) {
-                $column->push($row->get($offset));
-            } else {
-                $column->push(null);
-            }
+            $column->push($row->get($offset));
         }
-        if ($column->isEmpty()) {
-            throw new \OutOfBoundsException('x');
-        }
+
         return $column;
     }
 
     /**
      * Returns a Vector representing the row at the given offset.
      *
-     * @param integer $y
+     * @param integer $offset
      * @return Vector<mixed>
      */
-    public function getRow(int $y): Vector
+    public function getRow(int $offset): Vector
     {
-        return $this->table->get($y);
+        assert($offset < $this->y, new \OutOfBoundsException());
+
+        return $this->table->get($offset);
     }
 
     /**
@@ -253,12 +247,9 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     public function getDiagonal(): Vector
     {
         $row = new Vector();
-        for ($y = 0; $y < $this->y; $y++) {
-            for ($x = 0; $x < $this->x; $x++) {
-                if ($x === $y) {
-                    $row->push($this->get($x, $y));
-                }
-            }
+        $size = max($this->x, $this->y);
+        for ($o = 0; $o < $size; $o++) {
+            $row->push($this->get($o, $o));
         }
         return $row;
     }
@@ -285,12 +276,12 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     public function getMinors(int $column_x, int $row_y = 0): Matrix
     {
         $rows = new Vector();
-        for ($y = 0; $y < $this->y; $y++) {
+        foreach ($this->table as $y => $colVector) {
             if ($y === $row_y) continue;
             $row = new Vector();
-            for ($x = 0; $x < $this->x; $x++) {
+            foreach ($colVector as $x => $value) {
                 if ($x === $column_x) continue;
-                $row->push($this->get($x, $y));
+                $row->push($value);
             }
             $rows->push($row);
         }
@@ -682,7 +673,6 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function transpose(): Matrix
     {
-        $matrix = new self;
         $table = new Map;
         foreach ($this->table as $y => $row) {
             foreach ($row as $x => $cell) {
@@ -814,20 +804,22 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function setData(iterable $table = []): Matrix
     {
-        $x = 0;
-        $rows = new Vector();
-        foreach ($table as $y => $row) {
-            $row_Vector = new Vector($row);
-            $c = $row_Vector->count();
-            if ($c > $x) {
-                $x = $c;
-            }
-            $rows->push($row_Vector);
-        }
-        $this->y = $rows->count();
-        $this->x = $x;
+        $this->x = 0;
+        $this->y = 0;
+        $this->table = new Vector();
 
-        $this->table = new Vector($rows);
+        foreach ($table as $y => $col) {
+            if (!($col instanceof Vector)) {
+                $col = new Vector($col);
+            }
+            if ($this->x === 0) {
+                $this->x = $col->count();
+            } elseif ($col->count() !== $this->x) {
+                throw new \InvalidArgumentException(sprintf('row %d has %d columns but %d was expected', $y, $col->count(), $this->x));
+            }
+            $this->table->push($col);
+            $this->y++;
+        }
 
         return $this;
     }
@@ -938,15 +930,14 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     public function __toString()
     {
         $out = '';
-        for ($y = 0; $y < $this->y; $y++) {
+        foreach ($this->table as $cols) {
             $out .= '[';
-            for ($x = 0; $x < $this->x; $x++) {
-                $out .= $this->get($x, $y).', ';
+            foreach ($cols as $value) {
+                $out .= $value.', ';
             }
             $out = rtrim($out, ' ,');
             $out .= ']'.\PHP_EOL;
         }
-        $out .= \PHP_EOL;
 
         return $out;
     }

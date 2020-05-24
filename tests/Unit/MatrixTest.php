@@ -104,16 +104,55 @@ class MatrixTest extends TestCase
         $this->assertEquals(-240, $det);
     }
 
+    public function testGetColumnOutOfBoundsException1()
+    {
+        $this->expectError();
+
+        $matrix = new Matrix();
+
+        $matrix->getColumn(0);
+    }
+
+    public function testGetColumnOutOfBoundsException2()
+    {
+        $this->expectError();
+
+        $matrix = new Matrix([
+            [4, -2,  8],
+            [1,  9,  2],
+            [2,  5,  7],
+        ]);
+
+        $matrix->getColumn(3);
+    }
+
     public function testGetColumn()
     {
         $matrix = new Matrix([
             [4, -2,  8],
-            [1,  9, -2],
+            [1,  9,  0],
             [2,  5,  7],
         ]);
         $expected = new Vector([-2, 9, 5]);
 
         $this->assertEquals($expected, $matrix->getColumn(1));
+
+        $expected = new Vector([8, 0, 7]);
+
+        $this->assertEquals($expected, $matrix->getColumn(2));
+    }
+
+    public function testGetRowOutOfBoundsException()
+    {
+        $this->expectError();
+
+        $matrix = new Matrix([
+            [4, -2,  8],
+            [1,  9,  2],
+            [2,  5,  7],
+        ]);
+
+        $matrix->getRow(3);
     }
 
     public function testGetRow()
@@ -200,9 +239,10 @@ class MatrixTest extends TestCase
             [-1, 1,  0],
             [-1, 0,  1]
         ]);
-        $matrix->inverse();
+        $inversed = $matrix->getInverse();
         
-        $this->assertEquals($expected, $matrix);
+        $this->assertEquals($expected, $inversed);
+        $this->assertNotEquals($expected, $matrix);
     }
 
     public function testGetMinors()
@@ -369,6 +409,12 @@ class MatrixTest extends TestCase
 
     public function testInverse()
     {
+        $matrix = new Matrix([[1]]);
+        $expected = new Matrix([[1]]);
+        $matrix->inverse();
+        
+        $this->assertEquals($expected, $matrix);
+
         $matrix = new Matrix([
             [-3, 1],
             [ 5, 0]
@@ -571,6 +617,14 @@ class MatrixTest extends TestCase
     public function testIsSymmetric()
     {
         $matrix = new Matrix([
+            [ 1,  2],
+            [-2,  4],
+            [ 1,  2]
+        ]);
+
+        $this->assertFalse($matrix->isSymmetric());
+
+        $matrix = new Matrix([
             [ 1,  2,  1],
             [-2,  4, -2],
             [ 1,  2,  1]
@@ -589,6 +643,14 @@ class MatrixTest extends TestCase
 
     public function testIsSkewSymmetric()
     {
+        $matrix = new Matrix([
+            [  0,  2],
+            [ -2,  0],
+            [ 45,  4]
+       ]);
+
+       $this->assertFalse($matrix->isSkewSymmetric());
+        
         $matrix = new Matrix([
             [-8,  0,  6],
             [ 0, 10,  4],
@@ -681,7 +743,9 @@ class MatrixTest extends TestCase
             [8, 9, 1]
         ]);
 
-        $this->assertEquals($expected, $matrix->add(1));
+        $matrix->add(1);
+
+        $this->assertEquals($expected, $matrix);
     }
 
     public function testAddMatrix()
@@ -702,7 +766,46 @@ class MatrixTest extends TestCase
             [10, 10,  1]
         ]);
 
-        $this->assertEquals($expected, $matrix1->add($matrix2));
+        $matrix1->add($matrix2);
+
+        $this->assertEquals($expected, $matrix1);
+    }
+
+    public function testAddedScalar()
+    {
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 0]
+        ]);
+        $expected = new Matrix([
+            [2, 3, 4],
+            [5, 6, 7],
+            [8, 9, 1]
+        ]);
+
+        $this->assertEquals($expected, $matrix->added(1));
+    }
+
+    public function testAddedMatrix()
+    {
+        $matrix1 = new Matrix([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 0]
+        ]);
+        $matrix2 = new Matrix([
+            [0, 8, 7],
+            [6, 5, 4],
+            [3, 2, 1]
+        ]);
+        $expected = new Matrix([
+            [ 1, 10, 10],
+            [10, 10, 10],
+            [10, 10,  1]
+        ]);
+
+        $this->assertEquals($expected, $matrix1->added($matrix2));
     }
 
     public function testSubtractScalar()
@@ -718,7 +821,9 @@ class MatrixTest extends TestCase
             [6, 7, -1]
         ]);
 
-        $this->assertEquals($expected, $matrix->subtract(1));
+        $matrix->subtract(1);
+
+        $this->assertEquals($expected, $matrix);
     }
 
     public function testSubtractMatrix()
@@ -739,7 +844,46 @@ class MatrixTest extends TestCase
             [ 4,  6, -1]
         ]);
 
-        $this->assertEquals($expected, $matrix1->subtract($matrix2));
+        $matrix1->subtract($matrix2);
+
+        $this->assertEquals($expected, $matrix1);
+    }
+
+    public function testSubtractedScalar()
+    {
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 0]
+        ]);
+        $expected = new Matrix([
+            [0, 1,  2],
+            [3, 4,  5],
+            [6, 7, -1]
+        ]);
+
+        $this->assertEquals($expected, $matrix->subtracted(1));
+    }
+
+    public function testSubtractedMatrix()
+    {
+        $matrix1 = new Matrix([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 0]
+        ]);
+        $matrix2 = new Matrix([
+            [0, 8, 7],
+            [6, 5, 4],
+            [3, 2, 1]
+        ]);
+        $expected = new Matrix([
+            [ 1, -6, -4],
+            [-2,  0,  2],
+            [ 4,  6, -1]
+        ]);
+
+        $this->assertEquals($expected, $matrix1->subtracted($matrix2));
     }
 
     public function testMultiplyScalar()
@@ -792,6 +936,22 @@ class MatrixTest extends TestCase
         $this->assertEquals($expected, $matrix1->multiply($matrix2));
     }
 
+    public function testMultipliedScalar()
+    {
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 0]
+        ]);
+        $expected = new Matrix([
+            [ 3,  6,  9],
+            [12, 15, 18],
+            [21, 24,  0]
+        ]);
+
+        $this->assertEquals($expected, $matrix->multiplied(3));
+    }
+
     public function testDivideScalar()
     {
         $matrix = new Matrix([
@@ -805,7 +965,9 @@ class MatrixTest extends TestCase
             [3.5,   4,   0]
         ]);
 
-        $this->assertEquals($expected, $matrix->divide(2));
+        $matrix->divide(2);
+
+        $this->assertEquals($expected, $matrix);
     }
 
     public function testDivideMatrix()
@@ -825,6 +987,23 @@ class MatrixTest extends TestCase
 
         $this->assertEquals($expected, $matrix1->divide($matrix2));
     }
+
+    public function testDividedScalar()
+    {
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 0]
+        ]);
+        $expected = new Matrix([
+            [0.5,   1, 1.5],
+            [  2, 2.5,   3],
+            [3.5,   4,   0]
+        ]);
+
+        $this->assertEquals($expected, $matrix->divided(2));
+    }
+
 
     public function testExponential()
     {
@@ -1086,6 +1265,19 @@ class MatrixTest extends TestCase
         $this->assertEquals(0, $matrix->get(2, 2));
     }
 
+    public function testSetDataInvalidArgumentException()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $data = [
+            [4, -2,  8],
+            [1,  9],
+            [2,  5,  7],
+        ];
+        $matrix = new Matrix();
+        $matrix->setData($data);
+    }
+
     public function testSetData()
     {
         $data = [
@@ -1141,5 +1333,65 @@ class MatrixTest extends TestCase
         $expected = "[[4,-2,8],[1,9,-2],[2,5,7]]";
 
         $this->assertEquals($expected, \json_encode($matrix));
+    }
+
+    public function testGetter()
+    {
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [0, 4, 5],
+            [1, 0, 6]
+        ]);
+
+        $this->assertEquals(3, $matrix->x);
+        $this->assertNull($matrix->data);
+    }
+
+    public function testCallException()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [0, 4, 5],
+            [1, 0, 6]
+        ]);
+
+        $matrix->upsideDown();
+    }
+
+    public function testCall()
+    {
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [0, 4, 5],
+            [1, 0, 6]
+        ]);
+        $expected = new Matrix([
+            [ 24, -12,  -2],
+            [  5,   3,  -5],
+            [ -4,   2,   4]
+        ]);
+
+        // getAdjoint is alias for getAdjugate
+        $adj = $matrix->getAdjoint();
+
+        $this->assertEquals($expected, $adj);
+    }
+
+    public function testToString()
+    {
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [0, 4, 5],
+            [1, 0, 6]
+        ]);
+
+        $expected = '[1, 2, 3]
+[0, 4, 5]
+[1, 0, 6]
+';
+
+        $this->assertEquals($expected, $matrix.'');
     }
 }
