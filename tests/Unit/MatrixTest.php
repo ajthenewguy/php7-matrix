@@ -2,8 +2,7 @@
 
 namespace Tests\Unit;
 
-use Ds\Map;
-use Ds\Vector;
+use Ds\{Map, Vector};
 use Matrix\Matrix;
 use PHPUnit\Framework\TestCase;
 
@@ -17,7 +16,7 @@ class MatrixTest extends TestCase
     public function testCreate()
     {
         $matrix = Matrix::create(5);
-        $table = $matrix->table;
+        $table = $matrix->getData();
 
         $this->assertCount(5, $table);
         $this->assertCount(5, $table->get(0));
@@ -25,7 +24,7 @@ class MatrixTest extends TestCase
         $this->assertEquals(0, $matrix->get(4, 4));
         
         $matrix = Matrix::create(4, 3, 2);
-        $table = $matrix->table;
+        $table = $matrix->getData();
 
         $this->assertCount(3, $table);
         $this->assertCount(4, $table->get(0));
@@ -64,7 +63,7 @@ class MatrixTest extends TestCase
 
     public function testDeterminantSquareException()
     {
-        $this->expectError(\LogicException::class);
+        $this->expectError();
         $this->expectErrorMessage('determinant is only defined for a square matrix');
 
         $matrix = new Matrix([
@@ -345,7 +344,7 @@ class MatrixTest extends TestCase
 
     public function testInverseSquareException()
     {
-        $this->expectError(\LogicException::class);
+        $this->expectError();
         $this->expectErrorMessage('inverse is only defined for a square matrix');
 
         $matrix = new Matrix([
@@ -355,9 +354,9 @@ class MatrixTest extends TestCase
         $matrix->inverse();
     }
 
-    public function testInverseInvertableException()
+    public function testInverseInvertibleException()
     {
-        $this->expectError(\LogicException::class);
+        $this->expectError();
         $this->expectErrorMessage('inverse is only defined for a matrix with a non-zero determinant');
 
         $matrix = new Matrix([
@@ -370,6 +369,44 @@ class MatrixTest extends TestCase
 
     public function testInverse()
     {
+        $matrix = new Matrix([
+            [-3, 1],
+            [ 5, 0]
+        ]);
+        $expected = new Matrix([
+            [0, 1/5],
+            [1, 3/5]
+        ]);
+        $matrix->inverse();
+        
+        $this->assertEquals($expected, $matrix);
+
+        $matrix = new Matrix([
+            [ 1, -1, 3],
+            [ 2,  1, 2],
+            [-2, -2, 1]
+        ]);
+        $expected = new Matrix([
+            [     1,  -1,  -1],
+            [-(6/5), 7/5, 4/5],
+            [-(2/5), 4/5, 3/5]
+        ]);
+        $matrix->inverse();
+        
+        $this->assertEquals($expected, $matrix);
+        
+        $matrix = new Matrix([
+            [2, 1],
+            [4, 4]
+        ]);
+        $expected = new Matrix([
+            [ 1, -0.25],
+            [-1,  0.5 ]
+        ]);
+        $matrix->inverse();
+        
+        $this->assertEquals($expected, $matrix);
+
         $matrix = new Matrix([
             [1, 3, 3],
             [1, 4, 3],
@@ -385,16 +422,124 @@ class MatrixTest extends TestCase
         $this->assertEquals($expected, $matrix);
     }
 
-    public function testIsInvertable()
+    public function testIsDiagonal()
     {
-        // isInvertable
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [0, 5, 6],
+            [0, 0, 9]
+        ]);
+
+        $this->assertFalse($matrix->isDiagonal());
+
+        $matrix = new Matrix([
+            [1, 0, 0],
+            [4, 5, 0],
+            [5, 7, 9]
+        ]);
+
+        $this->assertFalse($matrix->isDiagonal());
+
+        $matrix = new Matrix([
+            [1, 0, 0],
+            [0, 5, 0],
+            [0, 0, 9]
+        ]);
+
+        $this->assertTrue($matrix->isDiagonal());
+    }
+
+    public function testIsTriangular()
+    {
+        $matrix = new Matrix([
+            [1, 0, 0, 0],
+            [0, 5, 0, 0],
+            [0, 7, 9, 0]
+        ]);
+
+        $this->assertFalse($matrix->isTriangular());
+
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [0, 5, 6],
+            [0, 0, 9]
+        ]);
+
+        $this->assertTrue($matrix->isTriangular());
+
+        $matrix = new Matrix([
+            [1, 0, 0],
+            [4, 5, 0],
+            [5, 7, 9]
+        ]);
+
+        $this->assertTrue($matrix->isTriangular());
+    }
+
+    public function testIsLowerTriangular()
+    {
+        $matrix = new Matrix([
+            [1, 0, 0, 0],
+            [0, 5, 0, 0],
+            [0, 7, 9, 0]
+        ]);
+
+        $this->assertFalse($matrix->isLowerTriangular());
+
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [0, 5, 6],
+            [0, 0, 9]
+        ]);
+
+        $this->assertFalse($matrix->isLowerTriangular());
+
+        $matrix = new Matrix([
+            [1, 0, 0],
+            [4, 5, 0],
+            [5, 7, 9]
+        ]);
+
+        $this->assertTrue($matrix->isLowerTriangular());
+    }
+
+    public function testIsUpperTriangular()
+    {
+        $matrix = new Matrix([
+            [1, 0, 0, 0],
+            [0, 5, 0, 0],
+            [0, 7, 9, 0]
+        ]);
+
+        $this->assertFalse($matrix->isUpperTriangular());
+
+        $matrix = new Matrix([
+            [1, 0, 0],
+            [4, 5, 0],
+            [5, 7, 9]
+        ]);
+
+        $this->assertFalse($matrix->isUpperTriangular());
+
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [0, 5, 6],
+            [0, 0, 9]
+        ]);
+
+        $this->assertTrue($matrix->isUpperTriangular());
+    }
+
+    public function testIsInvertible()
+    {
+        // isInvertible
         $matrix = new Matrix([
             [1, 2, 3],
             [4, 5, 6],
             [5, 7, 9]
         ]);
 
-        $this->assertFalse($matrix->isInvertable());
+        $this->assertFalse($matrix->isInvertible());
 
         $matrix = new Matrix([
             [2, 5, 1],
@@ -402,7 +547,7 @@ class MatrixTest extends TestCase
             [0, 6, 7]
         ]);
 
-        $this->assertTrue($matrix->isInvertable());
+        $this->assertTrue($matrix->isInvertible());
     }
 
     public function testIsSquare()
@@ -482,7 +627,7 @@ class MatrixTest extends TestCase
 
     public function testTraceSquareMatrixException()
     {
-        $this->expectError(\LogicException::class);
+        $this->expectError();
         $this->expectErrorMessage('trace is only defined for a square matrix');
 
         $matrix = new Matrix([
@@ -616,19 +761,32 @@ class MatrixTest extends TestCase
     public function testMultiplyMatrix()
     {
         $matrix1 = new Matrix([
-            [1, 2, 3],
-            [4, 5, 6],
-            [7, 8, 0]
+            [0, 1, 2],
+            [3, 4, 5]
         ]);
         $matrix2 = new Matrix([
-            [0, 8, 7],
-            [6, 5, 4],
-            [3, 2, 1]
+            [ 6,  7],
+            [ 8,  9],
+            [10, 11]
         ]);
         $expected = new Matrix([
-            [ 0, 16, 21],
-            [24, 25, 24],
-            [21, 16,  0]
+            [ 28,  31],
+            [100, 112]
+        ]);
+
+        $this->assertEquals($expected, $matrix1->multiply($matrix2));
+
+        $matrix1 = new Matrix([
+            [1, 2],
+            [3, 4]
+        ]);
+        $matrix2 = new Matrix([
+            [1, 2],
+            [3, 4]
+        ]);
+        $expected = new Matrix([
+            [ 7, 10],
+            [15, 22]
         ]);
 
         $this->assertEquals($expected, $matrix1->multiply($matrix2));
@@ -653,22 +811,78 @@ class MatrixTest extends TestCase
     public function testDivideMatrix()
     {
         $matrix1 = new Matrix([
-            [1, 2, 7],
-            [9, 5, 6],
-            [6, 8, 0]
+            [4, 4],
+            [6, 4]
         ]);
         $matrix2 = new Matrix([
-            [2, 8, 7],
-            [3, 5, 4],
-            [3, 2, 1]
+            [2, 2],
+            [3, 2]
         ]);
         $expected = new Matrix([
-            [0.5, 0.25, 1  ],
-            [3  , 1   , 1.5],
-            [2  , 4   , 0  ]
+            [2, 0],
+            [0, 2]
         ]);
 
         $this->assertEquals($expected, $matrix1->divide($matrix2));
+    }
+
+    public function testExponential()
+    {
+        $matrix = new Matrix([
+            [1, 2],
+            [3, 4]
+        ]);
+        $expected = new Matrix([
+            [ 7, 10],
+            [15, 22]
+        ]);
+
+        $this->assertEquals($expected, $matrix->exponential(2));
+
+        $matrix = Matrix::create(3, 3, 2);
+        $expected = Matrix::create(3, 3, 12);
+
+        $this->assertEquals($expected, $matrix->exponential(2));
+
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9]
+        ]);
+        $expected = new Matrix([
+            [ 30,  36,  42],
+            [ 66,  81,  96],
+            [102, 126, 150]
+        ]);
+
+        $this->assertEquals($expected, $matrix->exponential(2));
+
+        $matrix = new Matrix([
+            [1, 2],
+            [3, 4]
+        ]);
+        $expected = new Matrix([
+            [37,  54],
+            [81, 118]
+        ]);
+
+        $this->assertEquals($expected, $matrix->exponential(3));
+    }
+
+    public function testPowScalar()
+    {
+        $matrix = new Matrix([
+            [1, 2, 3],
+            [3, 2, 1],
+            [4, 4, 4]
+        ]);
+        $expected = new Matrix([
+            [19, 18, 17],
+            [13, 14, 15],
+            [32, 32, 32]
+        ]);
+
+        $this->assertEquals($expected, $matrix->exponential(2));
     }
 
     public function testTranspose()
@@ -734,8 +948,8 @@ class MatrixTest extends TestCase
 
     public function testApplyMatrixDimensionMismatchException()
     {
-        $this->expectError(\LogicException::class);
-        $this->expectErrorMessage('matrices must have the same dimensions to apply a callback to another matrix');
+        $this->expectError();
+        $this->expectErrorMessage('matrices must have the same dimensions');
 
         $matrix1 = new Matrix([
             [ 4, -2,  8],
@@ -747,7 +961,7 @@ class MatrixTest extends TestCase
             [ 4, -2]
         ]);
 
-        $matrix1->applyMatrix($matrix2, function () { return 0; });
+        $matrix1->applyMatrix($matrix2, function () { return 0; }, Matrix::SAME);
     }
 
     public function testApplyMatrix()
@@ -762,17 +976,25 @@ class MatrixTest extends TestCase
             [12,  7, 16],
             [ 4, -2,  8]
         ]);
-        $expected = new Matrix([
-            [12, -2,  22],
-            [15,  0,  30],
-            [20,  5,  96]
-        ]);
-        $callback = function ($value1, $value2, $x, $y) {
+        $callback = function ($value1, $value2, $x, $y, $z) {
             if ($x === $y) {
                 return $value1 * $value2;
             }
             return $value1 + $value2;
         };
+        
+        $expected = Matrix::create($matrix1->y, $matrix2->x);
+        for ($y = 0; $y < $matrix1->y; $y++) {
+            for ($x = 0; $x < $matrix2->x; $x++) {
+                $column = $matrix2->getColumn($x);
+                foreach ($matrix1->getRow($y) as $z => $value) {
+                    $expected->set($x, $y, 
+                        $expected->get($x, $y) + $callback($value, $column->get($z), $x, $y, $z)
+                    );
+                }
+            }
+        }
+
         $matrix1->applyMatrix($matrix2, $callback);
 
         $this->assertEquals($expected, $matrix1);
@@ -780,8 +1002,8 @@ class MatrixTest extends TestCase
 
     public function testMapMatrixDimensionMismatchException()
     {
-        $this->expectError(\LogicException::class);
-        $this->expectErrorMessage('matrices must have the same dimensions to apply a callback to another matrix');
+        $this->expectError();
+        $this->expectErrorMessage('matrices must have the same dimensions');
 
         $matrix1 = new Matrix([
             [ 4, -2,  8],
@@ -793,7 +1015,7 @@ class MatrixTest extends TestCase
             [ 4, -2]
         ]);
 
-        $matrix1->mapMatrix($matrix2, function () { return 0; });
+        $matrix1->mapMatrix($matrix2, function () { return 0; }, Matrix::SAME);
     }
 
     public function testMapMatrix()
@@ -808,17 +1030,24 @@ class MatrixTest extends TestCase
             [12,  7, 16],
             [ 4, -2,  8]
         ]);
-        $expected = new Matrix([
-            [12, -2,  22],
-            [15,  0,  30],
-            [20,  5,  96]
-        ]);
         $callback = function ($value1, $value2, $x, $y) {
             if ($x === $y) {
                 return $value1 * $value2;
             }
             return $value1 + $value2;
         };
+        
+        $expected = Matrix::create($matrix1->y, $matrix2->x);
+        for ($y = 0; $y < $matrix1->y; $y++) {
+            for ($x = 0; $x < $matrix2->x; $x++) {
+                $column = $matrix2->getColumn($x);
+                foreach ($matrix1->getRow($y) as $z => $value) {
+                    $expected->set($x, $y, 
+                        $expected->get($x, $y) + $callback($value, $column->get($z), $x, $y)
+                    );
+                }
+            }
+        }
 
         $this->assertEquals($expected, $matrix1->mapMatrix($matrix2, $callback));
     }
