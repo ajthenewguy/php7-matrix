@@ -21,11 +21,13 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     use GenericCollection;
 
 
-    public const SQUARE = 0;
+    public const SQUARE = 1;
 
-    public const SAME = 1;
+    public const SAME = 2;
 
-    public const REFLECT = 2;
+    public const REFLECT = 4;
+
+    public const INVERTIBLE = 8;
 
     /**
      * Method aliases. Format:
@@ -160,9 +162,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function determinant()
     {
-        assert($this->isSquare(),
-            new \LogicException('determinant is only defined for a square matrix')
-        );
+        $this->validateDimensions($this, self::SQUARE);
 
         if ($this->x === 1) {
             return $this->get(0, 0);
@@ -262,9 +262,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function getCofactors(): Matrix
     {
-        assert($this->isSquare(),
-            new \LogicException('cofactors can only be calculated for a square matrix')
-        );
+        $this->validateDimensions($this, self::SQUARE);
 
         return $this->map(function ($cell, $x, $y) {
             return pow(-1, $x + $y) * $this->getMinors($x, $y)->determinant();
@@ -356,12 +354,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function inverse(): Matrix
     {
-        assert($this->isSquare(),
-            new \LogicException('inverse is only defined for a square matrix')
-        );
-        assert($this->isInvertible(),
-            new \LogicException('inverse is only defined for a matrix with a non-zero determinant')
-        );
+        $this->validateDimensions($this, self::SQUARE | self::INVERTIBLE);
 
         if ($this->y === 1) {
             return new Matrix([[1 / $this->get(0, 0)]]);
@@ -466,7 +459,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     public function isSkewSymmetric(): bool
     {
         if ($this->isSquare()) {
-            return $this->getTranspose()->equals($this->getNegative());
+            return $this->getNegative()->equals($this->getTranspose());
         }
         return false;
     }
@@ -478,9 +471,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function trace()
     {
-        assert($this->isSquare(),
-            new \LogicException('trace is only defined for a square matrix')
-        );
+        $this->validateDimensions($this, self::SQUARE);
 
         return $this->getDiagonal()->sum();
     }
@@ -498,7 +489,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             $equals = true;
             foreach ($this->table as $y => $row) {
                 foreach ($row as $x => $cell) {
-                    $equals = $this->get($x, $y) === $m->get($x, $y);
+                    $equals = $cell === $m->get($x, $y);
                     if (!$equals) {
                         break 2;
                     }
@@ -523,7 +514,9 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             });
         }
 
-        return $this->setData($this->added($input));
+        return $this->apply(function ($currentValue, $x, $y) use ($input) {
+            return $currentValue + $input->get($x, $y);
+        });
     }
 
     /**
@@ -540,8 +533,8 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             });
         }
 
-        return $this->map(function ($myValue, $x, $y) use ($input) {
-            return $myValue + $input->get($x, $y);
+        return $this->map(function ($currentValue, $x, $y) use ($input) {
+            return $currentValue + $input->get($x, $y);
         });
     }
 
@@ -560,7 +553,9 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             });
         }
 
-        return $this->setData($this->subtracted($input));
+        return $this->apply(function ($currentValue, $x, $y) use ($input) {
+            return $currentValue - $input->get($x, $y);
+        });
     }
 
     /**
@@ -577,8 +572,8 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             });
         }
 
-        return $this->map(function ($myValue, $x, $y) use ($input) {
-            return $myValue - $input->get($x, $y);
+        return $this->map(function ($currentValue, $x, $y) use ($input) {
+            return $currentValue - $input->get($x, $y);
         });
     }
 
@@ -597,7 +592,9 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             });
         }
 
-        return $this->setData($this->multiplied($input));
+        return $this->applyMatrix($input, function ($currentValue, $theirValue) {
+            return $currentValue * $theirValue;
+        }, self::REFLECT);
     }
 
     /**
@@ -614,8 +611,8 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             });
         }
 
-        return $this->mapMatrix($input, function ($myValue, $theirValue) {
-            return $myValue * $theirValue;
+        return $this->mapMatrix($input, function ($currentValue, $theirValue) {
+            return $currentValue * $theirValue;
         }, self::REFLECT);
     }
 
@@ -727,7 +724,6 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function apply(callable $callback): Matrix
     {
-        $rows = new Vector();
         foreach ($this->table as $y => $row) {
             foreach ($row as $x => $cell) {
                 $this->set($x, $y, $callback($cell, $x, $y));
@@ -764,10 +760,10 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      * 
      * @param Matrix<Vector<Vector<mixed>>> $matrix
      * @param callable $callback
-     * @param integer $validation [0: self::SQUARE, 1: self::SAME, 2: self::REFLECT]
+     * @param integer $validation [1: self::SQUARE, 2: self::SAME, 4: self::REFLECT, 8: self::INVERTIBLE]
      * @return Matrix<Vector<Vector<mixed>>>
      */
-    public function applyMatrix(Matrix $matrix, callable $callback, $validation = 1): Matrix
+    public function applyMatrix(Matrix $matrix, callable $callback, $validation = self::SAME): Matrix
     {
         return $this->setData($this->mapMatrix($matrix, $callback, $validation));
     }
@@ -778,10 +774,10 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      * 
      * @param Matrix<Vector<Vector<mixed>>> $matrix
      * @param callable $callback
-     * @param integer $validation [0: self::SQUARE, 1: self::SAME, 2: self::REFLECT]
+     * @param integer $validation [1: self::SQUARE, 2: self::SAME, 4: self::REFLECT, 8: self::INVERTIBLE]
      * @return Matrix<Vector<Vector<mixed>>>
      */
-    public function mapMatrix(Matrix $matrix, callable $callback, $validation = 1): Matrix
+    public function mapMatrix(Matrix $matrix, callable $callback, $validation = self::SAME): Matrix
     {
         $this->validateDimensions($matrix, $validation);
 
@@ -869,23 +865,28 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
 
     /**
      * @param Matrix<Vector<Vector<mixed>>> $matrix
-     * @param integer $type
+     * @param integer $flags
      */
-    public function validateDimensions(Matrix $matrix, $type = 0): void
+    public function validateDimensions(Matrix $matrix, $flags = 0): void
     {
-        if ($type === self::SQUARE) {
-            assert($matrix->x === $matrix->y,
+        if ($flags & self::SQUARE) {
+            assert($matrix->isSquare(),
                 new \LogicException('matrix must be square')
             );
         }
-        if ($type === self::SAME) {
+        if ($flags & self::SAME) {
             assert($this->x === $matrix->x && $this->y === $matrix->y,
                 new \LogicException('matrices must have the same dimensions')
             );
         }
-        if ($type === self::REFLECT) {
+        if ($flags & self::REFLECT) {
             assert($this->x === $matrix->y && $this->y === $matrix->x,
                 new \LogicException('matrix dimension mismatch: column count must match row count')
+            );
+        }
+        if ($flags & self::INVERTIBLE) {
+            assert($matrix->isInvertible(),
+                new \LogicException('matrix must have a non-zero determinant (invertible)')
             );
         }
     }

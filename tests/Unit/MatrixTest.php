@@ -64,7 +64,7 @@ class MatrixTest extends TestCase
     public function testDeterminantSquareException()
     {
         $this->expectError();
-        $this->expectErrorMessage('determinant is only defined for a square matrix');
+        $this->expectErrorMessage('matrix must be square');
 
         $matrix = new Matrix([
             [1, 3, 2],
@@ -345,7 +345,7 @@ class MatrixTest extends TestCase
     public function testInverseSquareException()
     {
         $this->expectError();
-        $this->expectErrorMessage('inverse is only defined for a square matrix');
+        $this->expectErrorMessage('matrix must be square');
 
         $matrix = new Matrix([
             [1, 3, 2],
@@ -357,7 +357,7 @@ class MatrixTest extends TestCase
     public function testInverseInvertibleException()
     {
         $this->expectError();
-        $this->expectErrorMessage('inverse is only defined for a matrix with a non-zero determinant');
+        $this->expectErrorMessage('matrix must have a non-zero determinant (invertible)');
 
         $matrix = new Matrix([
             [1, 2, 3],
@@ -628,7 +628,7 @@ class MatrixTest extends TestCase
     public function testTraceSquareMatrixException()
     {
         $this->expectError();
-        $this->expectErrorMessage('trace is only defined for a square matrix');
+        $this->expectErrorMessage('matrix must be square');
 
         $matrix = new Matrix([
             [1, 2, 3],
