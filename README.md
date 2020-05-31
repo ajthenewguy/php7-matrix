@@ -193,3 +193,133 @@ Subtract a matrix or value to this instance.
     public transpose(): Matrix
 
 Flip the Matrix along the diagonal.
+
+## Matrix Mapping Algorithm
+When mapping one matrix to another, their dimensions must match exactly or must reflect (transposed dimensions). Either the column counts and row counts must match or the row count of one must match the column count of the other.
+
+### Example: Matrix->multiply(Matrix)
+
+Matrix A:
+
+    [1, 2, 3]
+    [4, 5, 6]
+
+Matrix B:
+
+    [7, 8]
+    [9, 10]
+    [11, 12]
+
+
+Expected:
+
+    [ 58,  64]
+    [139, 154]
+
+STEP 1 - 1×7:
+
+    A:             B:
+    [1, -, -] x [7, -]
+    [-, -, -]   [-, -]
+                [-, -]
+
+STEP 2 - 2×9:
+
+    A:             B:
+    [-, 2, -] x [-, -]
+    [-, -, -]   [9, -]
+                [-, -]
+
+STEP 3 - 3×11:
+
+    A:             B:
+    [-, -, 3] x [ -, -]
+    [-, -, -]   [ -, -]
+                [11, -]
+
+STEP 4 - Sum the products:
+
+    C:
+    [58, -]
+    [ -, -]
+
+STEP 5 - 1×8:
+
+    A:             B:
+    [1, -, -] x [-, 8]
+    [-, -, -]   [-, -]
+                [-, -]
+
+STEP 6 - 2×10:
+
+    A:             B:
+    [-, 2, -] x [-,  -]
+    [-, -, -]   [-, 10]
+                [-,  -]
+
+STEP 7 - 3×12:
+
+    A:             B:
+    [-, -, 3] x [-,  -]
+    [-, -, -]   [-,  -]
+                [-, 12]
+
+STEP 8 - Sum the products:
+
+    C:
+    [58, 64]
+    [ -, -]
+
+STEP 9 - 4×7:
+
+    A:             B:
+    [-, -, -] x [7, -]
+    [4, -, -]   [-, -]
+                [-, -]
+
+STEP 10 - 5×9:
+
+    A:             B:
+    [-, -, -] x [-, -]
+    [-, 5, -]   [9, -]
+                [-, -]
+
+STEP 11 - 6×11:
+
+    A:             B:
+    [-, -, -] x [-,  -]
+    [-, -, 6]   [-,  -]
+                [11, -]
+
+STEP 12 - Sum the products:
+
+    C:
+    [ 58, 64]
+    [139,  -]
+
+STEP 13 - 8×4:
+
+    A:             B:
+    [-, -, -] x [-, 8]
+    [4, -, -]   [-, -]
+                [-, -]
+
+STEP 14 - 5×10:
+
+    A:             B:
+    [-, -, -] x [-,  -]
+    [-, 5, -]   [-, 10]
+                [-,  -]
+
+STEP 15 - 6×12:
+
+    A:             B:
+    [-, -, -] x [-,  -]
+    [-, -, 6]   [-,  -]
+                [-, 12]
+
+STEP 16 - Sum the products:
+
+    C:
+    [ 58,  64]
+    [139, 154]

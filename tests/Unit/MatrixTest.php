@@ -47,6 +47,13 @@ class MatrixTest extends TestCase
         $this->assertEquals(1, $matrix->get(2, 2));
     }
 
+    public function testRandom()
+    {
+        $matrix = Matrix::random(2);
+
+        $this->assertInstanceOf(Matrix::class, $matrix);
+    }
+
     public function testGetAntidiagonal()
     {
         $matrix = new Matrix([
@@ -413,7 +420,7 @@ class MatrixTest extends TestCase
         $expected = new Matrix([[1]]);
         $matrix->inverse();
         
-        $this->assertEquals($expected, $matrix);
+        $this->assertEquals($expected->getData(), $matrix->getData());
 
         $matrix = new Matrix([
             [-3, 1],
@@ -1161,20 +1168,51 @@ class MatrixTest extends TestCase
             }
             return $value1 + $value2;
         };
-        
-        $expected = Matrix::create($matrix1->y, $matrix2->x);
-        for ($y = 0; $y < $matrix1->y; $y++) {
-            for ($x = 0; $x < $matrix2->x; $x++) {
-                $column = $matrix2->getColumn($x);
-                foreach ($matrix1->getRow($y) as $z => $value) {
-                    $expected->set($x, $y, 
-                        $expected->get($x, $y) + $callback($value, $column->get($z), $x, $y, $z)
-                    );
-                }
-            }
-        }
 
-        $matrix1->applyMatrix($matrix2, $callback);
+        $matrix1 = new Matrix([
+            [1, 2, 3],
+            [4, 5, 6]
+        ]);
+        $matrix2 = new Matrix([
+            [7, 8],
+            [9, 10],
+            [11, 12]
+        ]);
+        $expected = new Matrix([
+            [58, 64],
+            [139, 154]
+        ]);
+
+        $callback = function ($value1, $value2, $x, $y, $z) {
+            return $value1 * $value2;
+        };
+
+        $matrix1->applyMatrix($matrix2, $callback, Matrix::REFLECT);
+
+        $this->assertEquals($expected, $matrix1);
+    }
+
+    public function testApplyMatrixReflect()
+    {
+        $matrix1 = new Matrix([
+            [1, 2, 3],
+            [4, 5, 6]
+        ]);
+        $matrix2 = new Matrix([
+            [7, 8],
+            [9, 10],
+            [11, 12]
+        ]);
+        $expected = new Matrix([
+            [58, 64],
+            [139, 154]
+        ]);
+
+        $callback = function ($value1, $value2, $x, $y, $z) {
+            return $value1 * $value2;
+        };
+
+        $matrix1->applyMatrix($matrix2, $callback, Matrix::REFLECT);
 
         $this->assertEquals($expected, $matrix1);
     }
@@ -1199,36 +1237,81 @@ class MatrixTest extends TestCase
 
     public function testMapMatrix()
     {
+        // $matrix1 = new Matrix([
+        //     [ 4, -2,  8],
+        //     [ 3,  0, 14],
+        //     [16,  7, 12]
+        // ]);
+        // $matrix2 = new Matrix([
+        //     [ 3,  0, 14],
+        //     [12,  7, 16],
+        //     [ 4, -2,  8]
+        // ]);
+        // $expected = new Matrix([
+        //     [34, 11, 86],
+        //     [24, 15, 39],
+        //     [86, 6, 149]
+        // ]);
+        // $callback = function ($value1, $value2, $x, $y) {
+        //     if ($x === $y) {
+        //         return $value1 * $value2;
+        //     }
+        //     return $value1 + $value2;
+        // };
+
+        // $expected = Matrix::create($matrix1->y, $matrix2->x);
+        // for ($y = 0; $y < $matrix1->y; $y++) {
+        //     for ($x = 0; $x < $matrix2->x; $x++) {
+        //         $column = $matrix2->getColumn($x);
+        //         foreach ($matrix1->getRow($y) as $z => $value) {
+        //             $expected->set($x, $y, 
+        //                 $expected->get($x, $y) + $callback($value, $column->get($z), $x, $y)
+        //             );
+        //         }
+        //     }
+        // }
+
         $matrix1 = new Matrix([
-            [ 4, -2,  8],
-            [ 3,  0, 14],
-            [16,  7, 12]
+            [1, 2, 3],
+            [4, 5, 6]
         ]);
         $matrix2 = new Matrix([
-            [ 3,  0, 14],
-            [12,  7, 16],
-            [ 4, -2,  8]
+            [7, 8],
+            [9, 10],
+            [11, 12]
         ]);
-        $callback = function ($value1, $value2, $x, $y) {
-            if ($x === $y) {
-                return $value1 * $value2;
-            }
-            return $value1 + $value2;
-        };
-        
-        $expected = Matrix::create($matrix1->y, $matrix2->x);
-        for ($y = 0; $y < $matrix1->y; $y++) {
-            for ($x = 0; $x < $matrix2->x; $x++) {
-                $column = $matrix2->getColumn($x);
-                foreach ($matrix1->getRow($y) as $z => $value) {
-                    $expected->set($x, $y, 
-                        $expected->get($x, $y) + $callback($value, $column->get($z), $x, $y)
-                    );
-                }
-            }
-        }
+        $expected = new Matrix([
+            [58, 64],
+            [139, 154]
+        ]);
 
-        $this->assertEquals($expected, $matrix1->mapMatrix($matrix2, $callback));
+        $callback = function ($value1, $value2, $x, $y, $z) {
+            return $value1 * $value2;
+        };
+
+        $result = $matrix1->mapMatrix($matrix2, $callback, Matrix::REFLECT);
+
+        $this->assertEquals($expected, $result);
+
+        $matrix1 = new Matrix([
+            [3, 4, 2]
+        ]);
+        $matrix2 = new Matrix([
+            [13, 9, 7, 15],
+            [8, 7, 4, 6],
+            [6, 4, 0, 3]
+        ]);
+        $expected = new Matrix([
+            [83, 63, 37, 75]
+        ]);
+
+        $callback = function ($value1, $value2, $x, $y, $z) {
+            return $value1 * $value2;
+        };
+
+        $result = $matrix1->mapMatrix($matrix2, $callback, Matrix::NONE);
+
+        $this->assertEquals($expected, $result);
     }
 
     public function testGet()

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Matrix;
 
-use Ds\{Vector, Map};
+use Ds\Vector;
 use Ds\Traits\GenericCollection;
 
 /**
@@ -20,14 +20,15 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
 {
     use GenericCollection;
 
+    public const NONE = 1;
 
-    public const SQUARE = 1;
+    public const SQUARE = 2;
 
-    public const SAME = 2;
+    public const SAME = 4;
 
-    public const REFLECT = 4;
+    public const REFLECT = 8;
 
-    public const INVERTIBLE = 8;
+    public const INVERTIBLE = 16;
 
     /**
      * Method aliases. Format:
@@ -43,6 +44,13 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
         'transposed' => 'getTranspose',
         'pow'        => 'exponential'
     ];
+
+    /**
+     * Cache for matrix calculations
+     * 
+     * @var array
+     */
+    private $cache;
 
     /**
      * Width: number of columns
@@ -93,14 +101,19 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
         if (is_null($height)) {
             $height = $width;
         }
-        $x = 0;
         $rows = new Vector();
-        for ($y = 0; $y < $height; $y++) {
+        $rows->allocate($height);
+        $y = 0;
+        while ($y < $height) {
             $row = new Vector();
-            for ($x = 0; $x < $width; $x++) {
+            $row->allocate($width);
+            $x = 0;
+            while ($x < $width) {
                 $row->push($fill);
+                $x++;
             }
             $rows->push($row);
+            $y++;
         }
         return new Matrix($rows);
     }
@@ -114,20 +127,49 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     public static function identity(int $size): Matrix
     {
         $rows = new Vector();
-        for ($y = 0; $y < $size; $y++) {
+        $y = 0;
+        while ($y < $size) {
             $row = new Vector();
-            for ($x = 0; $x < $size; $x++) {
+            $row->allocate($size);
+            $x = 0;
+            while ($x < $size) {
                 $row->push(\intval($x === $y));
+                $x++;
             }
             $rows->push($row);
+            $y++;
         }
-        return new Matrix($rows);
+        return new static($rows);
+    }
+
+    public static function random(int $size): Matrix
+    {
+        $rows = new Vector();
+        $y = 0;
+        while ($y < $size) {
+            $row = new Vector();
+            $row->allocate($size);
+            $x = 0;
+            while ($x < $size) {
+                $row->push(rand(0, 9));
+                $x++;
+            }
+            $rows->push($row);
+            $y++;
+        }
+        return new static($rows);
     }
 
 
     /******************************************************
      * Instance methods
      */
+
+    
+    private function initCache()
+    {
+        $this->cache = [];
+    }
 
 
     /**
@@ -139,22 +181,30 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     {
         $this->validateDimensions($this, self::SQUARE);
 
-        if ($this->x === 1) {
-            return $this->get(0, 0);
-        } elseif ($this->x === 2) {
-            return $this->get(0, 0) * $this->get(1, 1) - $this->get(0, 1) * $this->get(1, 0);
-        }
-        $determinant = 0;
-        foreach ($this->getRow(0) as $x => $cell) {
-            $minor_determinant = $cell * $this->getMinors($x)->determinant();
-            if (($x % 2) === 0) {
-                $determinant += $minor_determinant;
-            } else {
-                $determinant -= $minor_determinant;
+        if (!array_key_exists(__METHOD__, $this->cache)) {
+            switch ($this->y) {
+                case 1:
+                    $this->cache[__METHOD__] = $this->get(0, 0);
+                break;
+                case 2:
+                    $this->cache[__METHOD__] = $this->get(0, 0) * $this->get(1, 1) - $this->get(0, 1) * $this->get(1, 0);
+                break;
+                default:
+                    $determinant = 0;
+                    foreach ($this->getRow(0) as $x => $cell) {
+                        $minor_determinant = $cell * $this->getMinors($x)->determinant();
+                        if (($x % 2) === 0) {
+                            $determinant += $minor_determinant;
+                        } else {
+                            $determinant -= $minor_determinant;
+                        }
+                    }
+                    $this->cache[__METHOD__] = $determinant;
+                break;
             }
         }
 
-        return $determinant;
+        return $this->cache[__METHOD__];
     }
 
     /**
@@ -165,9 +215,12 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     public function getAntidiagonal(): Vector
     {
         $row = new Vector();
+        $row->allocate((int) ceil(($this->x + $this->y) / 2));
         $size = max($this->x, $this->y);
-        for ($o = 0; $o < $size; $o++) {
+        $o = 0;
+        while ($o < $size) {
             $row->push($this->get($this->x - 1 - $o, $o));
+            $o++;
         }
         return $row;
     }
@@ -183,8 +236,9 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
         assert($offset < $this->x, new \OutOfBoundsException());
 
         $column = new Vector();
+        $column->allocate($this->y);
 
-        foreach ($this->table as $y => $row) {
+        foreach ($this->table as $row) {
             $column->push($row->get($offset));
         }
 
@@ -247,9 +301,12 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     public function getDiagonal(): Vector
     {
         $row = new Vector();
+        $row->allocate((int) ceil(($this->x + $this->y) / 2));
         $size = max($this->x, $this->y);
-        for ($o = 0; $o < $size; $o++) {
+        $o = 0;
+        while ($o < $size) {
             $row->push($this->get($o, $o));
+            $o++;
         }
         return $row;
     }
@@ -261,7 +318,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function getInverse(): Matrix
     {
-        $matrix = new self(clone $this);
+        $matrix = new self(clone $this->table);
         $matrix->inverse();
         return $matrix;
     }
@@ -276,9 +333,11 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     public function getMinors(int $column_x, int $row_y = 0): Matrix
     {
         $rows = new Vector();
+        $rows->allocate($this->y);
         foreach ($this->table as $y => $colVector) {
             if ($y === $row_y) continue;
             $row = new Vector();
+            $row->allocate($this->x);
             foreach ($colVector as $x => $value) {
                 if ($x === $column_x) continue;
                 $row->push($value);
@@ -324,7 +383,12 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
         $this->validateDimensions($this, self::SQUARE | self::INVERTIBLE);
 
         if ($this->y === 1) {
-            return new Matrix([[1 / $this->get(0, 0)]]);
+            $value = $this->get(0, 0);
+            if ($value != 0.0) {
+                return new Matrix([[1 / $value]]);
+            } else {
+                return $this;
+            }
         }
 
         $adjugate = $this->getAdjugate();
@@ -363,14 +427,18 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
         if (!$this->isSquare()) {
             return false;
         }
-        foreach ($this->table as $y => $row) {
-            foreach ($row->slice($y + 1) as $x => $cell) {
-                if ($cell != 0) {
-                    return false;
+        if (!array_key_exists(__METHOD__, $this->cache)) {
+            $this->cache[__METHOD__] = true;
+            foreach ($this->table as $y => $row) {
+                foreach ($row->slice($y + 1) as $cell) {
+                    if ($cell != 0) {
+                        $this->cache[__METHOD__] = false;
+                        break 2;
+                    }
                 }
             }
         }
-        return true;
+        return $this->cache[__METHOD__];
     }
 
     /**
@@ -383,14 +451,18 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
         if (!$this->isSquare()) {
             return false;
         }
-        foreach ($this->table->slice(1) as $y => $row) {
-            foreach ($row->slice(0, ($y + 1)) as $x => $cell) {
-                if ($cell != 0) {
-                    return false;
+        if (!array_key_exists(__METHOD__, $this->cache)) {
+            $this->cache[__METHOD__] = true;
+            foreach ($this->table->slice(1) as $y => $row) {
+                foreach ($row->slice(0, ($y + 1)) as $cell) {
+                    if ($cell != 0) {
+                        $this->cache[__METHOD__] = false;
+                        break 2;
+                    }
                 }
             }
         }
-        return true;
+        return $this->cache[__METHOD__];
     }
 
     /**
@@ -400,7 +472,10 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function isInvertible(): bool
     {
-        return $this->determinant() != 0.0;
+        if (!array_key_exists(__METHOD__, $this->cache)) {
+            $this->cache[__METHOD__] = $this->determinant() != 0.0;
+        }
+        return $this->cache[__METHOD__];
     }
 
     /**
@@ -420,10 +495,13 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function isSymmetric(): bool
     {
-        if ($this->isSquare()) {
-            return $this->equals($this->getTranspose());
+        if (!array_key_exists(__METHOD__, $this->cache)) {
+            $this->cache[__METHOD__] = false;
+            if ($this->isSquare()) {
+                $this->cache[__METHOD__] = $this->equals($this->getTranspose());
+            }
         }
-        return false;
+        return $this->cache[__METHOD__];
     }
 
     /**
@@ -433,10 +511,13 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function isSkewSymmetric(): bool
     {
-        if ($this->isSquare()) {
-            return $this->getNegative()->equals($this->getTranspose());
+        if (!array_key_exists(__METHOD__, $this->cache)) {
+            $this->cache[__METHOD__] = false;
+            if ($this->isSquare()) {
+                $this->cache[__METHOD__] = $this->getNegative()->equals($this->getTranspose());
+            }
         }
-        return false;
+        return $this->cache[__METHOD__];
     }
 
     /**
@@ -459,19 +540,17 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function equals(Matrix $m): bool
     {
-        $equals = false;
         if ($this->x === $m->x && $this->y === $m->y) {
-            $equals = true;
             foreach ($this->table as $y => $row) {
                 foreach ($row as $x => $cell) {
-                    $equals = $cell === $m->get($x, $y);
-                    if (!$equals) {
-                        break 2;
+                    if ($cell !== $m->get($x, $y)) {
+                        return false;
                     }
                 }
             }
+            return true;
         }
-        return $equals;
+        return false;
     }
 
     /**
@@ -658,8 +737,10 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
 
         $clone = clone $this;
         $matrix = clone $this;
-        for ($i = 1; $i < $input; $i++) {
+        $i = 1;
+        while ($i < $input) {
             $matrix->multiply($clone);
+            $i++;
         }
 
         return $matrix;
@@ -673,17 +754,14 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function transpose(): Matrix
     {
-        $table = new Map;
+        $matrix = static::create($this->y, $this->x);
         foreach ($this->table as $y => $row) {
             foreach ($row as $x => $cell) {
-                if (!$table->hasKey($x)) {
-                   $table->put($x, new Map);
-                }
-                $table->get($x)->put($y, $cell);
+                $matrix->set($y, $x, $cell);
             }
         }
 
-        $this->setData($table);
+        $this->setData($matrix);
 
         return $this;
     }
@@ -715,15 +793,17 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     public function map(callable $callback): Matrix
     {
         $rows = new Vector();
+        $rows->allocate($this->y);
         foreach ($this->table as $y => $row) {
             $row_Vector = new Vector();
+            $row_Vector->allocate($this->x);
             foreach ($row as $x => $cell) {
                 $row_Vector->push($callback($cell, $x, $y));
             }
             $rows->push($row_Vector);
         }
 
-        return new Matrix($rows);
+        return new self($rows);
     }
 
     /**
@@ -733,10 +813,10 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      * 
      * @param Matrix<Vector<Vector<mixed>>> $matrix
      * @param callable $callback
-     * @param integer $validation [1: self::SQUARE, 2: self::SAME, 4: self::REFLECT, 8: self::INVERTIBLE]
+     * @param integer $validation
      * @return Matrix<Vector<Vector<mixed>>>
      */
-    public function applyMatrix(Matrix $matrix, callable $callback, $validation = self::SAME): Matrix
+    public function applyMatrix(Matrix $matrix, callable $callback, int $validation = self::SAME): Matrix
     {
         return $this->setData($this->mapMatrix($matrix, $callback, $validation));
     }
@@ -747,23 +827,28 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      * 
      * @param Matrix<Vector<Vector<mixed>>> $matrix
      * @param callable $callback
-     * @param integer $validation [1: self::SQUARE, 2: self::SAME, 4: self::REFLECT, 8: self::INVERTIBLE]
+     * @param integer $validation
      * @return Matrix<Vector<Vector<mixed>>>
      */
-    public function mapMatrix(Matrix $matrix, callable $callback, $validation = self::SAME): Matrix
+    public function mapMatrix(Matrix $matrix, callable $callback, int $validation = self::SAME): Matrix
     {
         $this->validateDimensions($matrix, $validation);
 
-        $newMatrix = Matrix::create($this->y, $matrix->x);
-        for ($y = 0; $y < $this->y; $y++) {
-            for ($x = 0; $x < $matrix->x; $x++) {
-                $column = $matrix->getColumn($x);
-                foreach ($this->getRow($y) as $z => $value) {
-                    $newMatrix->set($x, $y, 
-                        $newMatrix->get($x, $y) + $callback($value, $column->get($z), $x, $y, $z)
+        assert($this->x === $matrix->y,
+            new \LogicException('column count must match row count in mapped matrix')
+        );
+
+        $newMatrix = Matrix::create($matrix->x, $this->y);
+        $z = 0;
+        while ($z < $matrix->x) {
+            foreach ($this->table as $y => $this_row) {
+                foreach ($this_row as $x => $value1) {
+                    $newMatrix->set($z, $y,
+                        $newMatrix->get($z, $y) + $callback($value1, $matrix->get($z, $x), $x, $y, $z)
                     );
                 }
             }
+            $z++;
         }
 
         return $newMatrix;
@@ -778,6 +863,13 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function get(int $x, int $y)
     {
+        assert($x < $this->x,
+            new \OutOfRangeException(sprintf('attempted to access x index: %d on matrix with %d columns', $x, $this->x))
+        );
+        assert($y < $this->y,
+            new \OutOfRangeException(sprintf('attempted to access y index: %d on matrix with %d rows', $y, $this->y))
+        );
+
         return $this->table->get($y)->get($x);
     }
 
@@ -792,6 +884,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function set(int $x, int $y, $value): void
     {
+        $this->initCache();
         $this->table->get($y)->set($x, $value);
     }
 
@@ -804,22 +897,35 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function setData(iterable $table = []): Matrix
     {
-        $this->x = 0;
-        $this->y = 0;
+        $this->initCache();
+
+        if ($table instanceof Matrix) {
+            $this->x = $table->x;
+            $this->y = $table->y;
+            $this->table = $table->getData();
+
+            return $this;
+        }
+        
+        $this->x = $x = 0;
+        $this->y = $y = 0;
         $this->table = new Vector();
 
-        foreach ($table as $y => $col) {
+        foreach ($table as $row_y => $col) {
             if (!($col instanceof Vector)) {
                 $col = new Vector($col);
             }
-            if ($this->x === 0) {
-                $this->x = $col->count();
-            } elseif ($col->count() !== $this->x) {
-                throw new \InvalidArgumentException(sprintf('row %d has %d columns but %d was expected', $y, $col->count(), $this->x));
+            if ($x === 0) {
+                $x = $col->count();
+            } elseif ($col->count() !== $x) {
+                throw new \InvalidArgumentException(sprintf('row %d has %d columns but %d was expected', $row_y, $col->count(), $x));
             }
             $this->table->push($col);
-            $this->y++;
+            $y++;
         }
+
+        $this->x = $x;
+        $this->y = $y;
 
         return $this;
     }
@@ -842,7 +948,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      * @param Matrix<Vector<Vector<mixed>>> $matrix
      * @param integer $flags
      */
-    private function validateDimensions(Matrix $matrix, $flags = 0): void
+    private function validateDimensions(Matrix $matrix, int $flags = 0): void
     {
         if ($flags & self::SQUARE) {
             assert($matrix->isSquare(),
@@ -873,7 +979,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
     public function getIterator(): \Generator
     {
-        foreach ($this->table as $key => $value) {
+        foreach ($this->table as $value) {
             yield $value;
         }
     }
@@ -933,7 +1039,11 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
         foreach ($this->table as $cols) {
             $out .= '[';
             foreach ($cols as $value) {
-                $out .= $value.', ';
+                if (is_scalar($value)) {
+                    $out .= $value.', ';
+                } else {
+                    $out .= var_export($value, true);
+                }
             }
             $out = rtrim($out, ' ,');
             $out .= ']'.\PHP_EOL;
