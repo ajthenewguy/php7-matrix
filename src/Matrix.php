@@ -48,7 +48,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     /**
      * Cache for matrix calculations
      * 
-     * @var array
+     * @var array<mixed>
      */
     private $cache;
 
@@ -115,7 +115,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             $rows->push($row);
             $y++;
         }
-        return new Matrix($rows);
+        return new self($rows);
     }
 
     /**
@@ -139,7 +139,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             $rows->push($row);
             $y++;
         }
-        return new static($rows);
+        return new self($rows);
     }
 
     public static function random(int $size): Matrix
@@ -157,7 +157,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             $rows->push($row);
             $y++;
         }
-        return new static($rows);
+        return new self($rows);
     }
 
 
@@ -166,9 +166,15 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
      */
 
     
-    private function initCache()
+     /**
+      * Reset the cache.
+      * 
+      * @return Matrix
+      */
+    private function initCache(): Matrix
     {
         $this->cache = [];
+        return $this;
     }
 
 
@@ -345,7 +351,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             $rows->push($row);
         }
 
-        return new Matrix($rows);
+        return new self($rows);
     }
 
     /**
@@ -383,12 +389,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
         $this->validateDimensions($this, self::SQUARE | self::INVERTIBLE);
 
         if ($this->y === 1) {
-            $value = $this->get(0, 0);
-            if ($value != 0.0) {
-                return new Matrix([[1 / $value]]);
-            } else {
-                return $this;
-            }
+            return new self([[1 / $this->get(0, 0)]]);
         }
 
         $adjugate = $this->getAdjugate();
@@ -1039,11 +1040,12 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
         foreach ($this->table as $cols) {
             $out .= '[';
             foreach ($cols as $value) {
-                if (is_scalar($value)) {
-                    $out .= $value.', ';
-                } else {
-                    $out .= var_export($value, true);
+                if (!is_scalar($value)) {
+                    $value = var_export($value, true);
+                    $value = str_replace("\n", '', $value);
                 }
+                $out .= $value;
+                $out .= ', ';
             }
             $out = rtrim($out, ' ,');
             $out .= ']'.\PHP_EOL;

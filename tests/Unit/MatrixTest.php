@@ -585,7 +585,12 @@ class MatrixTest extends TestCase
 
     public function testIsInvertible()
     {
-        // isInvertible
+        $matrix = new Matrix([
+            [0]
+        ]);
+
+        $this->assertFalse($matrix->isInvertible());
+
         $matrix = new Matrix([
             [1, 2, 3],
             [4, 5, 6],
@@ -708,6 +713,19 @@ class MatrixTest extends TestCase
 
     public function testEquals()
     {
+        $matrix1 = new Matrix([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 0]
+        ]);
+
+        $matrix2 = new Matrix([
+            [1, 2, 3],
+            [4, 5, 6],
+        ]);
+
+        $this->assertFalse($matrix1->equals($matrix2));
+
         $matrix1 = new Matrix([
             [1, 2, 3],
             [4, 5, 6],
@@ -1237,40 +1255,6 @@ class MatrixTest extends TestCase
 
     public function testMapMatrix()
     {
-        // $matrix1 = new Matrix([
-        //     [ 4, -2,  8],
-        //     [ 3,  0, 14],
-        //     [16,  7, 12]
-        // ]);
-        // $matrix2 = new Matrix([
-        //     [ 3,  0, 14],
-        //     [12,  7, 16],
-        //     [ 4, -2,  8]
-        // ]);
-        // $expected = new Matrix([
-        //     [34, 11, 86],
-        //     [24, 15, 39],
-        //     [86, 6, 149]
-        // ]);
-        // $callback = function ($value1, $value2, $x, $y) {
-        //     if ($x === $y) {
-        //         return $value1 * $value2;
-        //     }
-        //     return $value1 + $value2;
-        // };
-
-        // $expected = Matrix::create($matrix1->y, $matrix2->x);
-        // for ($y = 0; $y < $matrix1->y; $y++) {
-        //     for ($x = 0; $x < $matrix2->x; $x++) {
-        //         $column = $matrix2->getColumn($x);
-        //         foreach ($matrix1->getRow($y) as $z => $value) {
-        //             $expected->set($x, $y, 
-        //                 $expected->get($x, $y) + $callback($value, $column->get($z), $x, $y)
-        //             );
-        //         }
-        //     }
-        // }
-
         $matrix1 = new Matrix([
             [1, 2, 3],
             [4, 5, 6]
@@ -1476,5 +1460,16 @@ class MatrixTest extends TestCase
 ';
 
         $this->assertEquals($expected, $matrix.'');
+
+        $matrix = new Matrix([
+            [[], []],
+            [[], []]
+        ]);
+
+        $expected = '[array (), array ()]
+[array (), array ()]
+';
+
+        $this->assertEquals($expected, $matrix . '');
     }
 }

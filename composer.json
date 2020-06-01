@@ -8,7 +8,8 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^8.5",
-        "phpstan/phpstan": "^0.12.0@dev"
+        "phpstan/phpstan": "^0.12.0@dev",
+        "phpbench/phpbench": "@dev"
     },
     "autoload": {
         "psr-4": {
