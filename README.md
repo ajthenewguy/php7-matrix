@@ -297,7 +297,7 @@ STEP 12 - Sum the products:
     [ 58, 64]
     [139,  -]
 
-STEP 13 - 8×4:
+STEP 13 - 4×8:
 
     A:             B:
     [-, -, -] x [-, 8]

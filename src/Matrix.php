@@ -151,7 +151,7 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
             $row->allocate($size);
             $x = 0;
             while ($x < $size) {
-                $row->push(rand(0, 9));
+                $row->push(rand(0, 9) * (rand(0, 1) ? 1 : -1));
                 $x++;
             }
             $rows->push($row);
@@ -1037,14 +1037,28 @@ class Matrix implements \IteratorAggregate, \JsonSerializable
     public function __toString()
     {
         $out = '';
+        $column_widths = [];
         foreach ($this->table as $cols) {
-            $out .= '[';
-            foreach ($cols as $value) {
+            foreach ($cols as $x => $value) {
                 if (!is_scalar($value)) {
                     $value = var_export($value, true);
                     $value = str_replace("\n", '', $value);
                 }
-                $out .= $value;
+                $width = strlen(''.$value);
+                if (!isset($column_widths[$x]) || $column_widths[$x] < $width) {
+                    $column_widths[$x] = $width;
+                }
+            }
+        }
+
+        foreach ($this->table as $cols) {
+            $out .= '[';
+            foreach ($cols as $x => $value) {
+                if (!is_scalar($value)) {
+                    $value = var_export($value, true);
+                    $value = str_replace("\n", '', $value);
+                }
+                $out .= str_pad(''.$value, $column_widths[$x], ' ', STR_PAD_LEFT);
                 $out .= ', ';
             }
             $out = rtrim($out, ' ,');
